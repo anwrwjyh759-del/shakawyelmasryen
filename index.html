@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>شكاوي نار</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:'Cairo',sans-serif;background:#0f172a;color:#e2e8f0;text-align:center;padding:15px;margin:0}
+.container{max-width:500px;margin:auto}
+  h2{color:#ef4444}
+  input,select,button{width:100%;padding:12px;margin:8px 0;border-radius:8px;border:none;font-size:16px}
+  button{background:#ef4444;color:white;font-weight:bold;cursor:pointer}
+  button:disabled{background:#475569}
+.box{background:#1e293b;padding:15px;border-radius:10px;margin-top:15px;text-align:right;white-space:pre-wrap}
+</style>
+<script src='https://unpkg.com/tesseract.js@v4.0.2/dist/tesseract.min.js'></script>
+</head>
+<body>
+<div class="container">
+  <h2>📍 شكاوي نار</h2>
+  <p>صور المشكلة وهو هيكتبلك الصيغة الرسمية جاهزة للنسخ</p>
+
+  <input type="file" id="fileInput" accept="image/*" capture="environment">
+  <select id="type">
+    <option value="حفرة في الطريق">حفرة في الطريق</option>
+    <option value="تراكم قمامة">تراكم قمامة</option>
+    <option value="انقطاع مياه">انقطاع مياه</option>
+    <option value="كسر في عمود إنارة">كسر في عمود إنارة</option>
+    <option value="أخرى">أخرى</option>
+  </select>
+  <button id="btn" onclick="makeComplaint()">اكتب الشكوى</button>
+
+  <div id="output" class="box">الشكوى هتظهر هنا</div>
+</div>
+
+<script>
+async function makeComplaint() {
+  const file = document.getElementById('fileInput').files[0];
+  const type = document.getElementById('type').value;
+  const btn = document.getElementById('btn');
+  btn.disabled = true;
+  document.getElementById('output').innerText = 'جاري كتابة الشكوى...';
+
+  let locationText = "لم يتم تحديد الموقع";
+  if (navigator.geolocation) {
+    try{
+      const pos = await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej));
+      locationText = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
+    }catch(e){}
+  }
+
+  let description = type;
+  if (file) {
+    try{
+      const worker = await Tesseract.createWorker('ara+eng');
+      const { data: { text } = await worker.recognize(file);
+      await worker.terminate();
+      if (text.trim().length > 5) description = text.trim();
+    }catch(e){}
+  }
+
+  const complaint = `إلى السيد/ رئيس الحي المختص
+تحية طيبة وبعد،
+
+أتقدم بشكوى بخصوص: ${description}
+
+الموقع: ${locationText}
+تاريخ البلاغ: ${new Date().toLocaleDateString('ar-EG')}
+
+برجاء التكرم باتخاذ اللازم وإفادتي برقم الشكوى.
+
+وتفضلوا بقبول فائق الاحترام
+مقدمه/ مواطن`;
+
+  document.getElementById('output').innerText = complaint;
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>
